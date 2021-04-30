@@ -1,0 +1,16 @@
+{
+  "name": "example-01",
+  "version": "0.0.0",
+  "description": "This example is based on the blog post [Set Up a Connection Over WebSocket: Video Call with WebRTC Step 2](https://levelup.gitconnected.com/set-up-a-connection-over-websocket-videochat-with-javascript-step-2-f78c307c4fd3)",
+  "keywords": [],
+  "author": "Rob Brennan <rob@therobbrennan.com> (therobbrennan.com)",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheRobBrennan/explore-web-rtc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TheRobBrennan/explore-web-rtc/issues"
+  },
+  "homepage": "https://github.com/TheRobBrennan/explore-web-rtc#readme"
+}
