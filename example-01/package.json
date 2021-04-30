@@ -12,5 +12,8 @@
   "bugs": {
     "url": "https://github.com/TheRobBrennan/explore-web-rtc/issues"
   },
-  "homepage": "https://github.com/TheRobBrennan/explore-web-rtc#readme"
+  "homepage": "https://github.com/TheRobBrennan/explore-web-rtc#readme",
+  "dependencies": {
+    "websocket": "^1.0.34"
+  }
 }
