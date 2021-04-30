@@ -5,6 +5,11 @@
   "keywords": [],
   "author": "Rob Brennan <rob@therobbrennan.com> (therobbrennan.com)",
   "license": "ISC",
+  "scripts": {
+    "start": "npm run start:server",
+    "start:server": "node server/index.js",
+    "open": "open client/index.html"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TheRobBrennan/explore-web-rtc.git"
