@@ -156,3 +156,5 @@ peerConnection.ontrack = (event) => {
 #### Additional resources
 
 SUGGESTED: Review [WebRTC: the ICE Framework, STUN and TURN Servers](https://levelup.gitconnected.com/webrtc-the-ice-framework-stun-and-turn-servers-10b2972483bb)
+
+### Client Code
