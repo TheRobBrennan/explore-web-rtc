@@ -74,3 +74,34 @@ signaling.send(
   })
 )
 ```
+
+#### Answer
+
+Bob also has to be connected to the signaling server and has to have created a RTCPeerConnection object. After Alice sends him an offer, Bob has to do following:
+
+1. Bob receives Alice’s offer and sets it as the remote description in his RTCPeerConnection object calling _setRemoteDescription()_.
+   `await peerConnection.setRemoteDescription(offerFromAlice);`
+
+2. Bob creates a SDP answer, containing the same kind of information as the SDP offer Alice sent.
+   `const answer = await peerConnection.createAnswer();`
+
+3. Bob sets the local description of the connection to be this SDP by calling _setLocalDescription()_.
+   `await peerConnection.setLocalDescription(answerFromBob);`
+
+4. Bob sends this answer to Alice over the signaling mechanism.
+
+```js
+signaling.send(
+  JSON.stringify({
+    message_type: MESSAGE_TYPE.SDP,
+    content: answerFromBob,
+  })
+)
+```
+
+We are now back at Alice. She receives Bob’s answer and sets it as the remote description in her RTCPeerConnection object calling _setRemoteDescription()_.
+`await peerConnection.setRemoteDescription(answerFromBob);`
+
+At this point, Alice and Bob have now exchanged the media data and notified each other they want to start a video chat.
+
+They now have to share network information to establish a direct network connection if possible. This is not easy, but the ICE framework is doing it for us.
