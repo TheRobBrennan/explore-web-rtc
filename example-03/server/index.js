@@ -10,21 +10,25 @@ const wsServer = new server({
   httpServer,
 })
 
-let clients = []
+const peersByCode = {}
 
 wsServer.on("request", (request) => {
   const connection = request.accept()
-  const id = Math.random() * 10000
-  clients.push({ connection, id })
+  const id =
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15)
 
   connection.on("message", (message) => {
-    console.log(message)
-    clients
-      .filter((client) => client.id !== id)
-      .forEach((client) => client.connection.send(message.utf8Data))
-  })
+    const { code } = JSON.parse(message.utf8Data)
+    if (!peersByCode[code]) {
+      peersByCode[code] = [{ connection, id }]
+    } else if (!peersByCode[code].find((peer) => peer.id === id)) {
+      peersByCode[code].push({ connection, id })
+    }
 
-  connection.on("close", () => {
-    clients = clients.filter((client) => client.id !== id)
+    const peer = peersByCode[code].find((peer) => peer.id !== id)
+    if (peer) {
+      peer.connection.send(message.utf8Data)
+    }
   })
 })
