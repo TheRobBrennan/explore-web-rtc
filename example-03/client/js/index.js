@@ -1,136 +1,132 @@
-;(function () {
-  "use strict"
+(function () {
+  "use strict";
 
-  // Define the message types that the user can expect to receive
+  let code;
+
   const MESSAGE_TYPE = {
-    SDP: "SDP", // Offers and answers
-    CANDIDATE: "CANDIDATE", // ICE candidates
+    SDP: 'SDP',
+    CANDIDATE: 'CANDIDATE',
   }
 
-  document.addEventListener("click", async (event) => {
-    if (event.target.id === "start") {
-      startChat()
+  document.addEventListener('input', async (event) => {
+    if (event.target.id === 'code-input') {
+      const { value } = event.target;
+      if (value.length > 8) {
+        document.getElementById('start-button').disabled = false;
+        code = value;
+      } else {
+        document.getElementById('start-button').disabled = true;
+        code = null;
+      }
     }
-  })
+  });
+
+  document.addEventListener('click', async (event) => {
+    if (event.target.id === 'start-button' && code) {
+      startChat();
+    }
+  });
 
   const startChat = async () => {
     try {
-      // Request data from the camera and microphone
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: true,
-      })
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      showChatRoom();
 
-      // Once the user has granted permission, we can show the chat room
-      showChatRoom()
+      const signaling = new WebSocket('ws://127.0.0.1:1337');
+      const peerConnection = createPeerConnection(signaling);
 
-      // Establish a connection to our WebSocket server
-      const signaling = new WebSocket("ws://127.0.0.1:1337")
-      const peerConnection = createPeerConnection(signaling) // NOTE: We are using a fake STUN server for this example.
+      addMessageHandler(signaling, peerConnection);
 
-      // After creating the RTCPeerConnection object, we need to handle receiving a message
-      addMessageHandler(signaling, peerConnection)
+      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+      document.getElementById('self-view').srcObject = stream;
 
-      // Set our local tracks to the RTCPeerConnection object and display them in the desired video element
-      //  NOTE: Setting the tracks on the peer connection object will trigger the negogationneeded event, and the event listener
-      //  will call the createAndSendOffer function.
-      stream
-        .getTracks()
-        .forEach((track) => peerConnection.addTrack(track, stream))
-      document.getElementById("self-view").srcObject = stream
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
-  }
+  };
 
   const createPeerConnection = (signaling) => {
     const peerConnection = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.test.com:19000" }], // NOTE: This is a fake STUN server. You can replace it with a public one.
-    })
-
-    // This event is super important. It is fired when we add tracks to the connection, and later when something happens that requires a renegotiation.
-    //    TL:DR This event is where the signaling exchange will actually get started.
+      iceServers: [{ urls: 'stun:stun.l.test.com:193000' }],
+    });
+    
     peerConnection.onnegotiationneeded = async () => {
-      await createAndSendOffer()
-    }
+      await createAndSendOffer();
+    };
 
-    // Send ICE candidates to the peers
     peerConnection.onicecandidate = (iceEvent) => {
       if (iceEvent && iceEvent.candidate) {
-        signaling.send(
-          JSON.stringify({
-            message_type: MESSAGE_TYPE.CANDIDATE,
-            content: iceEvent.candidate,
-          })
-        )
+        sendMessage(signaling, {
+          message_type: MESSAGE_TYPE.CANDIDATE,
+          content: iceEvent.candidate,
+        });
       }
-    }
+    };
 
-    // Set the received tracks to our video HTML element
     peerConnection.ontrack = (event) => {
-      const video = document.getElementById("remote-view")
+      const video = document.getElementById('remote-view');
       if (!video.srcObject) {
-        video.srcObject = event.streams[0]
+        video.srcObject = event.streams[0];
       }
-    }
-
-    return peerConnection
+    };
+    
+    return peerConnection;
   }
 
   const addMessageHandler = (signaling, peerConnection) => {
     signaling.onmessage = async (message) => {
-      const data = JSON.parse(message.data)
+      const data = JSON.parse(message.data);
 
       if (!data) {
-        return
+        return;
       }
 
-      const { message_type, content } = data
+      const { message_type, content } = data;
       try {
         if (message_type === MESSAGE_TYPE.CANDIDATE && content) {
-          // If we receive a candidate, give it to the ICE agent
-          await peerConnection.addIceCandidate(content)
+          await peerConnection.addIceCandidate(content);
         } else if (message_type === MESSAGE_TYPE.SDP) {
-          if (content.type === "offer") {
-            // If we receive an offer:
-            //  - Set the remote description
-            //  - Create an answer
-            //  - Save the answer as a local description
-            //  - Send it to the peer
-            await peerConnection.setRemoteDescription(content)
-            const answer = await peerConnection.createAnswer()
-            await peerConnection.setLocalDescription(answer)
-            signaling.send(
-              JSON.stringify({
-                message_type: MESSAGE_TYPE.SDP,
-                content: answer,
-              })
-            )
-          } else if (content.type === "answer") {
-            // If we receive an answer:
-            //  - Set it as the local offer
-            await peerConnection.setRemoteDescription(content)
+          if (content.type === 'offer') {
+            await peerConnection.setRemoteDescription(content);
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            sendMessage(signaling, {
+              message_type: MESSAGE_TYPE.SDP,
+              content: answer,
+            });
+          } else if (content.type === 'answer') {
+            await peerConnection.setRemoteDescription(content);
           } else {
-            console.log("Unsupported SDP type.")
+            console.log('Unsupported SDP type.');
           }
         }
       } catch (err) {
-        console.error(err)
+        console.error(err);
       }
+    }:
+  };
+
+  const sendMessage = (signaling, message) => {
+    if (code) {
+      signaling.send(JSON.stringify({
+        ...message,
+        code,
+      }));
     }
-  }
+  };
 
   const createAndSendOffer = async (signaling, peerConnection) => {
-    const offer = await peerConnection.createOffer()
-    await peerConnection.setLocalDescription(offer)
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
 
-    signaling.send(
-      JSON.stringify({ message_type: MESSAGE_TYPE.SDP, content: offer })
-    )
-  }
+    sendMessage(signaling, {
+      message_type: MESSAGE_TYPE.SDP,
+      content: offer,
+    });
+  };
 
   const showChatRoom = () => {
-    document.getElementById("start").style.display = "none"
-    document.getElementById("chat-room").style.display = "block"
-  }
-})()
+    document.getElementById('start').style.display = 'none';
+    document.getElementById('chat-room').style.display = 'block';
+  };
+})();
