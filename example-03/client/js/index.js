@@ -49,7 +49,7 @@
     const peerConnection = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.test.com:193000' }],
     });
-    
+
     peerConnection.onnegotiationneeded = async () => {
       await createAndSendOffer();
     };
@@ -69,7 +69,7 @@
         video.srcObject = event.streams[0];
       }
     };
-    
+
     return peerConnection;
   }
 
