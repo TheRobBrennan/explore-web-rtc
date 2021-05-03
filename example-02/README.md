@@ -158,3 +158,11 @@ peerConnection.ontrack = (event) => {
 SUGGESTED: Review [WebRTC: the ICE Framework, STUN and TURN Servers](https://levelup.gitconnected.com/webrtc-the-ice-framework-stun-and-turn-servers-10b2972483bb)
 
 ### Client Code
+
+According to the blog post:
+
+> Start the WebSocket server and open the client in two different tabs. After clicking on “Start” on both pages, you should be able to communicate with yourself.
+
+I was not able to accomplish this on macOS Big Sur. I could open multiple browsers or multiple tabs - but only see the left hand video. The main video from the other expected connection did not display as suggested.
+
+According to the MDN Web APIs, you shouldn't use the `createOffer` legacy property. Instead, use `RTCRtpTransceiver` to control whether or not to accept incoming audio. This example isn't updated (yet - feel free to create a PR), but at least it's clear where the issue is.
