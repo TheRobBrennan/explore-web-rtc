@@ -105,3 +105,54 @@ We are now back at Alice. She receives Bob’s answer and sets it as the remote 
 At this point, Alice and Bob have now exchanged the media data and notified each other they want to start a video chat.
 
 They now have to share network information to establish a direct network connection if possible. This is not easy, but the ICE framework is doing it for us.
+
+### ICE Candidates
+
+The ICE (Interactive Connectivity Establishment) framework allows a peer to discover and communicate its public IP address.
+
+This works thanks to the STUN server URL which we gave as a parameter in the RTCPeerConnection object. It might be that a direct connection isn't possible due to the network configuration of the peers, in which case the connection will have to happen over a relay server - a TURN server:
+
+```js
+const peerConnection = new RTCPeerConnection({
+  iceServers: [
+    { urls: "stun:stun.test.com:19000" },
+    { urls: "turn:turn:19001" },
+  ],
+})
+```
+
+The ICE agent takes care of this exploration and decision making for us, checks the possibility of a direct connection, and if it can’t be done, establishes the connection over a TURN server (if it has been provided).
+
+Alice and Bob only have to listen to the event _icecandidate_ of the RTCPeerConnection. It is triggered every time a ICE candidate is found. They should then send their candidates to each other:
+
+```js
+peerConnection.onicecandidate = (iceEvent) => {
+  signaling.send(
+    JSON.stringify({
+      message_type: MESSAGE_TYPE.CANDIDATE,
+      content: iceEvent.candidate,
+    })
+  )
+}
+```
+
+When receiving the candidate of the other, Alice and Bob should pass it to the ICE agent of their RTCPeerConnection object:
+
+`await peerConnection.addIceCandidate(content);`
+
+The ICE agent will take care of the negotiation and will finalize the connection.
+
+When the connection is established, the tracks data start being exchanged over the connection. You can implement the ontrack event handler to display them:
+
+```js
+peerConnection.ontrack = (event) => {
+  const video = document.getElementById("remote-view")
+  if (!video.srcObject) {
+    video.srcObject = event.streams[0]
+  }
+}
+```
+
+#### Additional resources
+
+SUGGESTED: Review [WebRTC: the ICE Framework, STUN and TURN Servers](https://levelup.gitconnected.com/webrtc-the-ice-framework-stun-and-turn-servers-10b2972483bb)
